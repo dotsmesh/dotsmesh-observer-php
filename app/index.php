@@ -11,8 +11,7 @@ Observer data structure
 u/[id] - user data
 o/h/[host] - observed host data
 o/u/[id] - user observer data
-n/ - push notifications keys
- */
+*/
 
 use BearFramework\App;
 use X\API;
