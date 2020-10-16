@@ -370,11 +370,12 @@ class Utilities
      * Add a user id to the push notifications queue.
      *
      * @param string $userID The user id to add.
+     * @param mixed $payload The payload to send.
      * @return void
      */
-    static function queuePushNotification(string $userID): void
+    static function queuePushNotification(string $userID, $payload = null): void
     {
-        self::$queuedPushNotifications[] = $userID;
+        self::$queuedPushNotifications[] = [$userID, $payload];
     }
 
     /**
@@ -384,21 +385,12 @@ class Utilities
      */
     static function sendQueuedPushNotifications(): void
     {
-        self::sendPushNotifications(array_unique(self::$queuedPushNotifications));
-    }
-
-    /**
-     * Send push notifications to the users specified.
-     * 
-     * @param array $userIDs A list of user ids.
-     * @return void
-     */
-    static function sendPushNotifications(array $userIDs): void
-    {
-        if (empty($userIDs)) {
+        if (empty(self::$queuedPushNotifications)) {
             return;
         }
-        foreach ($userIDs as $userID) {
+        foreach (self::$queuedPushNotifications as $queuedPushNotificationData) {
+            $userID = $queuedPushNotificationData[0];
+            $payload = $queuedPushNotificationData[1];
             $subscriptions = Utilities::getUserPushSubscriptions($userID);
             foreach ($subscriptions as $sessionID => $subscription) {
                 $subscription = self::unpack($subscription);
@@ -412,7 +404,7 @@ class Utilities
                                 'privateKey' => $data[2]
                             ]
                         ]);
-                        $result = $webPush->sendOneNotification(\Minishlink\WebPush\Subscription::create($data[0]));
+                        $result = $webPush->sendOneNotification(\Minishlink\WebPush\Subscription::create($data[0]), $payload !== null ? json_encode($payload) : null);
                         self::log('user-push-notification', $userID . ' ' . ($result->isSuccess() ? 'success' : 'fail') . ' ' . $result->getReason());
                         if ($result->isSubscriptionExpired()) {
                             self::deleteUserPushSubscription($userID, $sessionID);
@@ -421,6 +413,7 @@ class Utilities
                 }
             }
         }
+        self::$queuedPushNotifications = [];
     }
 
     /**
