@@ -125,7 +125,7 @@ class Utilities
     static function unpack(string $value): array
     {
         $parts = explode(':', $value, 2);
-        return ['name' => $parts[0], 'value' => json_decode($parts[1], true)];
+        return ['name' => isset($parts[0], $parts[1]) ? $parts[0] : null, 'value' => isset($parts[1]) ? json_decode($parts[1], true) : null];
     }
 
     /**
@@ -398,58 +398,29 @@ class Utilities
         if (empty($userIDs)) {
             return;
         }
-        $keys = self::getPushNotificationsVapidKeys();
-        $auth = [
-            'VAPID' => [
-                'subject' => 'dotsmesh.' . DOTSMESH_OBSERVER_HOST_INTERNAL,
-                'publicKey' => $keys['publicKey'],
-                'privateKey' => $keys['privateKey']
-            ],
-        ];
-        $webPush = new \Minishlink\WebPush\WebPush($auth);
-        $notificationsData = [];
         foreach ($userIDs as $userID) {
             $subscriptions = Utilities::getUserPushSubscriptions($userID);
             foreach ($subscriptions as $sessionID => $subscription) {
-                $subscription = json_decode($subscription, true);
-                if (is_array($subscription)) {
-                    $webPush->queueNotification(\Minishlink\WebPush\Subscription::create($subscription));
-                    $notificationsData[] = [$userID, $sessionID];
+                $subscription = self::unpack($subscription);
+                if ($subscription['name'] === 'q') {
+                    $data = $subscription['value']; // 0 - subscription, 1 - vapid public key, 2 - vapid private key
+                    if (isset($data[0], $data[1], $data[2]) && is_array($data[0]) && is_string($data[1]) && is_string($data[2])) {
+                        $webPush = new \Minishlink\WebPush\WebPush([
+                            'VAPID' => [
+                                'subject' => 'dotsmesh.' . DOTSMESH_OBSERVER_HOST_INTERNAL,
+                                'publicKey' => $data[1],
+                                'privateKey' => $data[2]
+                            ]
+                        ]);
+                        $result = $webPush->sendOneNotification(\Minishlink\WebPush\Subscription::create($data[0]));
+                        self::log('user-push-notification', $userID . ' ' . ($result->isSuccess() ? 'success' : 'fail') . ' ' . $result->getReason());
+                        if ($result->isSubscriptionExpired()) {
+                            self::deleteUserPushSubscription($userID, $sessionID);
+                        }
+                    }
                 }
             }
         }
-        foreach ($webPush->flush() as $index => $report) {
-            $userID = $notificationsData[$index][0];
-            $sessionID = $notificationsData[$index][1];
-            self::log('user-push-notification', $userID . ' ' . ($report->isSuccess() ? 'success' : 'fail') . ' ' . $report->getReason());
-            if ($report->isSubscriptionExpired()) {
-                self::deleteUserPushSubscription($userID, $sessionID);
-            }
-        }
-    }
-
-    /**
-     * 
-     * @return array
-     */
-    static function getPushNotificationsVapidKeys(): array
-    {
-        $app = App::get();
-        $dataKey = 'n/v';
-        $data = $app->data->getValue($dataKey);
-        if ($data === null) {
-            $keys = \Minishlink\WebPush\VAPID::createVapidKeys();
-            $data = self::pack('', [$keys['publicKey'], $keys['privateKey']]);
-            $app->data->setValue($dataKey, $data);
-        }
-        $data = self::unpack($data);
-        if ($data['name'] === '') {
-            return [
-                'publicKey' => $data['value'][0],
-                'privateKey' => $data['value'][1]
-            ];
-        }
-        throw new \Exception('');
     }
 
     /**

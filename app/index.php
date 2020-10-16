@@ -79,32 +79,6 @@ $app->classes
     ->add('X\Utilities', __DIR__ . '/classes/Utilities.php');
 
 $app->routes
-    ->add('/', function (App\Request $request) {
-        if ($request->query->exists('pushkey')) {
-            $keys = Utilities::getPushNotificationsVapidKeys();
-            $response = new App\Response((string) $keys['publicKey']);
-            $response->headers->set($response->headers->make('Content-Type', 'text/plain'));
-            $response->headers->set($response->headers->make('Access-Control-Allow-Origin', '*'));
-            $response->headers->set($response->headers->make('X-Robots-Tag', 'noindex,nofollow'));
-            return $response;
-        }
-        if ($request->query->exists('ffff')) {
-            $auth = [
-                'VAPID' => [
-                    'subject' => 'dotsmesh.' . DOTSMESH_OBSERVER_HOST_INTERNAL,
-                    'publicKey' => 'BPT6YRpv8Ttkcn+H5823wXLydOBjBqy6t8EJ9gOO691Unep4uDgdFQ8yWS5Z96AfgbKQIipzp1cHy1y09Q4t4DA=',
-                    'privateKey' => 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgiTzsEFCKqm2HJlXhCwMHq00dX7D9hz11zGR11YKoGkihRANCAAT0+mEab/E7ZHJ/h+fNt8Fy8nTgYwasurfBCfYDjuvdVJ3qeLg4HRUPMlkuWfegH4GykCIqc6dXB8tctPUOLeAw'
-                ],
-            ];
-            $webPush = new \Minishlink\WebPush\WebPush($auth);
-            $subscription = '{"endpoint":"https://fcm.googleapis.com/fcm/send/cLS0qiQtjBg:APA91bGWhG3uZWoyO--v2JxJ2is7lYS_sOEvcuaThbylkLyKAMVdO0QIDNfe2D9b0MNdgOudXg-ywvmlE52FebNZZXWAEvER-2FRP1kjddgVqIQ3cD66i4E2aFDkt1fYYpcD_f2-osBX","expirationTime":null,"keys":{"p256dh":"BI4SEny5H7_4OZ6nen5fbXqGabfkYeHlJpv0SclMvXWyhTuCEPy_IJC5vtF9-_09s_GLqg4L8hWyQMVzDY8rlUg","auth":"9V9FYB4KGbpoR87C5NBvvg"}}';
-            $webPush->queueNotification(\Minishlink\WebPush\Subscription::create(json_decode($subscription, true)));
-            foreach ($webPush->flush() as $index => $report) {
-                echo $report->getReason();
-            }
-            exit;
-        }
-    })
     ->add('OPTIONS /', function (App\Request $request) {
         $method = strtoupper($request->headers->getValue('Access-Control-Request-Method'));
         if ($method === 'POST') {
@@ -129,7 +103,8 @@ $app->routes
                         'user.changes.addPushSubscription' => API\Endpoints\UserChangesAddPushSubscription::class,
                         'user.changes.delete' => API\Endpoints\UserChangesDelete::class,
                         'user.changes.updateSubscriptions' => API\Endpoints\UserChangesUpdateSubscriptions::class,
-                        'host.changes.notify' => API\Endpoints\HostChangesNotify::class
+                        'host.changes.notify' => API\Endpoints\HostChangesNotify::class,
+                        'utilities.getPushKeys' => API\Endpoints\UtilitiesGetPushKeys::class
                     ];
                     $method = $requestData['method'];
                     if (isset($methods[$method])) {
