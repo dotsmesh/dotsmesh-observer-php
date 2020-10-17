@@ -553,8 +553,6 @@ class Utilities
      */
     static function updateUserChangesSubscriptions(string $userID)
     {
-        $app = App::get();
-
         $userData = self::getUserData($userID);
         $userKeys = isset($userData['s']) && is_array($userData['s']) ? $userData['s']  : [];
 
