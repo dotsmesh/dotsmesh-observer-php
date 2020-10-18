@@ -23,7 +23,7 @@ if (!defined('DOTSMESH_OBSERVER_DEV_MODE')) {
 }
 
 if (!defined('DOTSMESH_OBSERVER_LOG_TYPES')) {
-    define('DOTSMESH_OBSERVER_LOG_TYPES', []); // 'host-changes-subscribe', 'user-push-notification'
+    define('DOTSMESH_OBSERVER_LOG_TYPES', []); // 'host-changes-subscription', 'user-push-notification'
 }
 
 if (!defined('DOTSMESH_OBSERVER_DATA_DIR')) {
@@ -48,7 +48,8 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $app = new App();
 
-$host = strtolower(substr($app->request->host, 9)); // remove dotsmesh.
+$host = $app->request->host;
+$host = substr($host, 0, 9) === 'dotsmesh.' ? strtolower(substr($host, 9)) : null;
 
 if (array_search($host, DOTSMESH_OBSERVER_HOSTS) === false) {
     http_response_code(503);
@@ -60,9 +61,7 @@ define('DOTSMESH_OBSERVER_HOST_INTERNAL', $host);
 
 $app->enableErrorHandler(['logErrors' => true, 'displayErrors' => DOTSMESH_OBSERVER_DEV_MODE]);
 
-$hostMD5 = md5($host);
-
-$dataDir = DOTSMESH_OBSERVER_DATA_DIR . '/' . $hostMD5;
+$dataDir = DOTSMESH_OBSERVER_DATA_DIR . '/' . md5($host);
 if (!is_dir($dataDir)) {
     mkdir($dataDir);
 }

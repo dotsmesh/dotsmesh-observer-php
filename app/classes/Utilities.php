@@ -404,7 +404,7 @@ class Utilities
                                 'privateKey' => $data[2]
                             ]
                         ]);
-                        $result = $webPush->sendOneNotification(\Minishlink\WebPush\Subscription::create($data[0]), $payload !== null ? json_encode($payload) : null);
+                        $result = $webPush->sendOneNotification(\Minishlink\WebPush\Subscription::create($data[0]), $payload !== null ? self::pack('', $payload) : null);
                         self::log('user-push-notification', $userID . ' ' . ($result->isSuccess() ? 'success' : 'fail') . ' ' . $result->getReason());
                         if ($result->isSubscriptionExpired()) {
                             self::deleteUserPushSubscription($userID, $sessionID);
@@ -503,7 +503,6 @@ class Utilities
      */
     static private function getObserverHostDataKey(string $host): string
     {
-        $app = App::get();
         return 'o/h/' . md5($host);
     }
 
@@ -653,7 +652,7 @@ class Utilities
                 } catch (\Exception $e) {
                     $result = $e->getMessage();
                 }
-                self::log('host-changes-subscribe', $userID . ' ' . $host . ' ' . json_encode($keysToAdd) . ' ' . json_encode($keysToRemove) . ' ' . json_encode($result));
+                self::log('host-changes-subscription', $userID . ' ' . $host . ' ' . json_encode($keysToAdd) . ' ' . json_encode($keysToRemove) . ' ' . json_encode($result));
             }
         }
     }
