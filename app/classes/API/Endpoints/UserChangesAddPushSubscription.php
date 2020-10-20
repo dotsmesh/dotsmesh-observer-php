@@ -18,7 +18,7 @@ class UserChangesAddPushSubscription extends UserEndpoint
         $userID = $this->requireValidUserID();
 
         $sessionID = $this->getArgument('sessionID', ['notEmptyString']);
-        $pushSubscription = $this->getArgument('pushSubscription', ['notEmptyString']);
+        $pushSubscription = $this->getArgument('pushSubscription', ['string']);
         Utilities::addUserPushSubscription($userID, $sessionID, $pushSubscription);
 
         return ['status' => 'ok'];

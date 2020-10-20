@@ -241,16 +241,19 @@ class Utilities
         $userData = self::getUserData($userID);
         if ($userData !== null) {
             // todo lock
-            $hasChange = false;
             if (!isset($userData['p']) || !is_array($userData['p'])) {
                 $userData['p'] = [];
             }
             if (!isset($userData['p'][$sessionID]) || $userData['p'][$sessionID] !== $pushSubscription) {
                 $userData['p'][$sessionID] = $pushSubscription;
-                $hasChange = true;
-            }
-            if ($hasChange) {
-                self::setUserData($userID, $userData);
+                if (strlen($userData['p'][$sessionID]) === 0) {
+                    unset($userData['p'][$sessionID]);
+                }
+                if (empty($userData['p'])) {
+                    self::deleteUser($userID);
+                } else {
+                    self::setUserData($userID, $userData);
+                }
             }
             // todo unlock
         }
