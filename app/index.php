@@ -11,7 +11,7 @@ Observer data structure
 u/[id] - user data
 o/h/[host] - observed host data
 o/u/[id] - user observer data
-*/
+ */
 
 use BearFramework\App;
 use X\API;
@@ -77,6 +77,14 @@ $app->classes
     ->add('X\Utilities', __DIR__ . '/classes/Utilities.php');
 
 $app->routes
+    ->add('/', function (App\Request $request) {
+        if ($request->query->exists('heartbeat')) {
+            $response = new App\Response\JSON(json_encode(['status' => 'ok', 'time' => time()]));
+            $response->headers->set($response->headers->make('X-Robots-Tag', 'noindex,nofollow'));
+            $response->headers->set($response->headers->make('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0'));
+            return $response;
+        }
+    })
     ->add('OPTIONS /', function (App\Request $request) {
         $method = strtoupper($request->headers->getValue('Access-Control-Request-Method'));
         if ($method === 'POST') {
